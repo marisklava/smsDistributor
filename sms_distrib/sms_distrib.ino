@@ -5,7 +5,7 @@
 GSM gsmAccess;
 GSM_SMS sms;
 
-const char ownerNumber[20] = "1188";
+const char ownerNumber[20] = "+371";
 char senderNumber[20]; 
 char c;
 
@@ -13,17 +13,21 @@ String recMessage;
 
 void setup()
 {
+  pinMode(13, OUTPUT);
   Serial.begin(9600);
   while(!Serial);
  
   Serial.println("SMS distributor v1.0");
+  Serial.print("Owner: [");
+  Serial.print(ownerNumber);
+  Serial.println("]");
 
   boolean notConnected = true;
   while(notConnected)
   {
     if(gsmAccess.begin(PINNUMBER) == GSM_READY)
     {
-      notConnected = false;
+      notConnected = false;      
     }
     else
     {
@@ -42,9 +46,14 @@ void loop()
     Serial.print("Message received from: ");
    
     sms.remoteNumber(senderNumber, 20);
-    Serial.println(senderNumber);
+    Serial.print("[");
+    Serial.print(senderNumber);
+    Serial.print("]");
 
-    if(senderNumber == ownerNumber)
+    String sNum = senderNumber;
+    String oNum = ownerNumber;
+    
+    if(sNum == oNum)
     {
       Serial.println(" (Owner)");
      
@@ -63,6 +72,16 @@ void loop()
      
       Serial.print("Message: ");
       Serial.println(recMessage);
+
+      if(recMessage == "ON")
+      {
+        digitalWrite(13, HIGH);
+      }
+      if(recMessage == "OFF")
+      {
+        digitalWrite(13, LOW);
+      }
+      
      
       sms.flush();
       Serial.println("Message deleted from modem memory");
