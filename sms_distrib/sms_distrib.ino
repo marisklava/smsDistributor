@@ -5,53 +5,53 @@
 GSM gsmAccess;
 GSM_SMS sms;
 
-const char ownerNumber[20] = "+371";
-char senderNumber[20]; 
-char c;
-
 String recMessage;
+const String pin = "maybe use string instead?";
+const String oNum = "+371";
+char senderNumber[20]; 
+char cmdPrefix = "!";
 
 void setup()
-{
-  pinMode(13, OUTPUT);
+{  
   Serial.begin(9600);
   while(!Serial);
- 
-  Serial.println("SMS distributor v1.0");
+  
+  pinMode(13, OUTPUT);
+  
+  Serial.print("SMS distributor v1.0\n\n");
   Serial.print("Owner: [");
-  Serial.print(ownerNumber);
-  Serial.println("]");
-
-  boolean notConnected = true;
-  while(notConnected)
+  Serial.print(oNum);
+  Serial.print("]\n\n");
+  Serial.println("Connecting");
+  
+  boolean isConnected = false;
+  while(!isConnected)
   {
     if(gsmAccess.begin(PINNUMBER) == GSM_READY)
     {
-      notConnected = false;      
+      isConnected = true;      
     }
     else
     {
       Serial.println("Not connected");
-      delay(1000);
+      delay(750);
     }
   }
-  Serial.println("GSM initialized");
-  Serial.println("Waiting for messages");
+  Serial.print("GSM initialized succesfuly\n");
 }
 
 void loop()
 {
   if(sms.available())
   {
-    Serial.print("Message received from: ");
-   
     sms.remoteNumber(senderNumber, 20);
+        
+    Serial.print("Message received from: ");   
     Serial.print("[");
     Serial.print(senderNumber);
     Serial.print("]");
 
     String sNum = senderNumber;
-    String oNum = ownerNumber;
     
     if(sNum == oNum)
     {
@@ -62,7 +62,8 @@ void loop()
         Serial.println("Discarded SMS");
         sms.flush();
       }
-     
+
+      char c;
       recMessage = "";
      
       while(c = sms.read())
@@ -73,16 +74,21 @@ void loop()
       Serial.print("Message: ");
       Serial.println(recMessage);
 
-      if(recMessage == "ON")
+      if(recMessage[0] == cmdPrefix)
       {
-        digitalWrite(13, HIGH);
+        recMessage.remove(0, 1);
+        Serial.println("Command: " + recMessage);
+        
+        if(recMessage == "ON")
+        {
+          digitalWrite(13, HIGH);
+        }
+        else if(recMessage == "OFF")
+        {
+          digitalWrite(13, LOW);
+        }
       }
-      if(recMessage == "OFF")
-      {
-        digitalWrite(13, LOW);
-      }
-      
-     
+           
       sms.flush();
       Serial.println("Message deleted from modem memory");
     }
