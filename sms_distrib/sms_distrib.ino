@@ -1,14 +1,15 @@
 #include <GSM.h>
 
+#define pin ""
+
 GSM gsmAccess;
 GSM_SMS sms;
 
 String msg;
-const String pin = "";
 const String oNum = "+371";
 char senderNumber[20]; 
-char cmdPrefix = "!";
-char msgSep = "|";
+char cmdPrefix = '!';
+char msgSep = '|';
 
 void setup()
 {  
@@ -90,19 +91,22 @@ void loop()
   if(Serial.available()) // We've got a message via serial connection
   {
     String command = "";
-    char single = ' ';
+    char single;
     
     while(Serial.available()) // Read all available symbols
     {
-      single = Serail.read(); // Read single symbol
-      if(single == '\n') // Stop when new line
+      single = Serial.read(); // Read single symbol
+      if(single == '\n' || single == '\r') // Stop when new line
       {
         break;
       }
       command += single; // Add that one symbol
     }
 
-    processRequest(command);
+    if(command != "")
+    {
+      processRequest(command);
+    }
   }
 }
 
@@ -113,20 +117,20 @@ void processRequest(String request)
     request.remove(0, 1); // Remove first symbol
     Serial.println("Command: " + request);
     
-    if(request == "On")
+    if(request == "on")
     {
       digitalWrite(13, HIGH); // Turn led on
     }
-    else if(request == "Off")
+    else if(request == "off")
     {
       digitalWrite(13, LOW); // Turn led off
     }
-    else if(request == "Cfg")
+    else if(request == "cfg")
     {
       Serial.println("SMS distributor config: ");
-      Serial.println("\tOwner number: " + oNum);
-      Serial.println("\tCommand prefix: " + cmdPrefix);
-      Serial.println("\tMessage seperator: " + msgSep);
+      Serial.println("   Owner number: " + oNum);
+      Serial.println("   Command prefix: " + cmdPrefix);
+      Serial.println("   Message seperator: " + msgSep);
     }
     else
     {
@@ -138,6 +142,13 @@ void processRequest(String request)
     while(request[0] != msgSep)
     {}
   }
+  else
+  {
+    Serial.println("Nothing interesting, move along citizen");
+  }
+  Serial.print("This nibba: [");
+  Serial.print(msg[0]);
+  Serial.println("]");
 }
 
 void sendMessage(char number[20], char message[200])
