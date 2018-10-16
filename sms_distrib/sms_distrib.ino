@@ -6,7 +6,9 @@ GSM gsmAccess;
 GSM_SMS sms;
 
 String msg;
-const String oNum = "+371";
+
+String owners[] = {"+37111111111", "+37111111112"}
+
 char senderNumber[20]; 
 char cmdPrefix = '!';
 char msgSep = '|';
@@ -19,8 +21,13 @@ void setup()
   pinMode(13, OUTPUT); // Turn digital 13 into output
   
   Serial.print("SMS distributor v1.0\n\n");
-  Serial.print("Owner: [");
-  Serial.print(oNum);
+  Serial.print("Owners: [");
+  
+  for(int i = 0; i < owners.length(); i++)
+  {
+  Serial.println(owners[i]);
+  }
+  
   Serial.print("]\n\n");
   Serial.println("Connecting");
   
@@ -54,7 +61,7 @@ void loop()
 
     String sNum = senderNumber; // We convert it to string to make it usable
     
-    if(sNum == oNum) // Is the sender owner?
+    if(contains(Owners, sNum)) // Is the sender owner?
     {
       Serial.println(" (Owner)");
      
@@ -128,7 +135,13 @@ void processRequest(String request)
     else if(request == "cfg")
     {
       Serial.println("SMS distributor config: ");
-      Serial.println("   Owner number: " + oNum);
+      Serial.println("   Owner numbers: ");
+      
+      for(int i = 0; i < owners.length(); i++)
+      {
+      Serial.println(owners[i]);
+      }
+      
       Serial.println("   Command prefix: " + cmdPrefix);
       Serial.println("   Message seperator: " + msgSep);
     }
@@ -159,4 +172,16 @@ void sendMessage(char number[20], char message[200])
  
   Serial.print("Sent message to ");
   Serial.println(number);
+}
+
+boolean contains(String Owners[], String Sender) {
+
+for(int i=0; i<Owners.length(); i++){
+
+  if(Owners[i] == Sender) return true;
+  
+}
+
+return false;
+  
 }
