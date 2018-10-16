@@ -1,22 +1,21 @@
 #include <GSM.h>
 
-#define PINNUMBER ""
-
 GSM gsmAccess;
 GSM_SMS sms;
 
-String recMessage;
-const String pin = "maybe use string instead?";
+String msg;
+const String pin = "";
 const String oNum = "+371";
 char senderNumber[20]; 
 char cmdPrefix = "!";
+char msgSep = "|";
 
 void setup()
 {  
-  Serial.begin(9600);
-  while(!Serial);
+  Serial.begin(9600); // Start serial connection
+  while(!Serial); // Wait for serial
   
-  pinMode(13, OUTPUT);
+  pinMode(13, OUTPUT); // Turn digital 13 into output
   
   Serial.print("SMS distributor v1.0\n\n");
   Serial.print("Owner: [");
@@ -25,35 +24,36 @@ void setup()
   Serial.println("Connecting");
   
   boolean isConnected = false;
-  while(!isConnected)
+  while(!isConnected) // While we aren't connected
   {
-    if(gsmAccess.begin(PINNUMBER) == GSM_READY)
+    if(gsmAccess.begin(pin) == GSM_READY) // Try to connect, takes several seconds
     {
-      isConnected = true;      
+      isConnected = true; // Yeah, it is connected
     }
     else
     {
-      Serial.println("Not connected");
-      delay(750);
+      Serial.println("Not connected"); // Darn, lets try again
+      delay(750); // Lil delay ©
     }
   }
-  Serial.print("GSM initialized succesfuly\n");
+  
+  Serial.print("GSM initialized succesfuly\n"); // Claim that we are connected
 }
 
 void loop()
 {
-  if(sms.available())
+  if(sms.available()) // We've got a message via GSM
   {
-    sms.remoteNumber(senderNumber, 20);
+    sms.remoteNumber(senderNumber, 20); // Get sender number
         
-    Serial.print("Message received from: ");   
+    Serial.print("Message received from: ");
     Serial.print("[");
     Serial.print(senderNumber);
     Serial.print("]");
 
-    String sNum = senderNumber;
+    String sNum = senderNumber; // We convert it to string to make it usable
     
-    if(sNum == oNum)
+    if(sNum == oNum) // Is the sender owner?
     {
       Serial.println(" (Owner)");
      
@@ -64,41 +64,79 @@ void loop()
       }
 
       char c;
-      recMessage = "";
+      msg = "";
      
-      while(c = sms.read())
+      while(c = sms.read()) // Read SMS letter-by-letter
       {
-        recMessage += c;
+        msg += c;
       }
+
+      sms.flush();
+      Serial.println("Message deleted from modem memory"); // Cuz we still have it localy
      
       Serial.print("Message: ");
-      Serial.println(recMessage);
+      Serial.println(msg);
 
-      if(recMessage[0] == cmdPrefix)
-      {
-        recMessage.remove(0, 1);
-        Serial.println("Command: " + recMessage);
-        
-        if(recMessage == "ON")
-        {
-          digitalWrite(13, HIGH);
-        }
-        else if(recMessage == "OFF")
-        {
-          digitalWrite(13, LOW);
-        }
-      }
-           
-      sms.flush();
-      Serial.println("Message deleted from modem memory");
+      processRequest(msg); 
     }
     else
     {
-      Serial.println(" (Not owner)");
-     
+      Serial.println(" (Not owner)");    
       sms.flush();
       Serial.println("Message deleted");
     }
+  }
+  
+  if(Serial.available()) // We've got a message via serial connection
+  {
+    String command = "";
+    char single = ' ';
+    
+    while(Serial.available()) // Read all available symbols
+    {
+      single = Serail.read(); // Read single symbol
+      if(single == '\n') // Stop when new line
+      {
+        break;
+      }
+      command += single; // Add that one symbol
+    }
+
+    processRequest(command);
+  }
+}
+
+void processRequest(String request)
+{
+  if(request[0] == cmdPrefix) // Is it command?
+  {
+    request.remove(0, 1); // Remove first symbol
+    Serial.println("Command: " + request);
+    
+    if(request == "On")
+    {
+      digitalWrite(13, HIGH); // Turn led on
+    }
+    else if(request == "Off")
+    {
+      digitalWrite(13, LOW); // Turn led off
+    }
+    else if(request == "Cfg")
+    {
+      Serial.println("SMS distributor config: ");
+      Serial.println("\tOwner number: " + oNum);
+      Serial.println("\tCommand prefix: " + cmdPrefix);
+      Serial.println("\tMessage seperator: " + msgSep);
+    }
+    else
+    {
+      Serial.println("Unknown command");
+    }
+  }
+  else if(request.indexOf(msgSep) != -1) // Is it a message that we should distribute?
+  {        
+    while(request[0] != msgSep)
+    {}
   }
 }
 
